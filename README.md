@@ -8,32 +8,37 @@ This repo is the **platform standard** — application teams use it as context w
 
 | Component | Tool | Description |
 |-----------|------|-------------|
-| EKS Cluster | Terraform | AWS EKS cluster with managed node groups |
-| VPC/Networking | Terraform | VPC, subnets, security groups, NAT gateways |
-| Container Registry | Terraform (ECR) | Per-service ECR repositories with lifecycle policies |
-| Namespace Provisioning | Terraform (K8s) | App namespaces with resource quotas and limit ranges |
-| DNS | Terraform + ExternalDNS | Route 53 hosted zone and automatic DNS record management |
+| EKS Cluster | AWS CDK | AWS EKS cluster with managed node groups |
+| VPC/Networking | AWS CDK | VPC, subnets, security groups, NAT gateways |
+| Container Registry | AWS CDK (ECR) | Per-service ECR repositories with lifecycle policies |
+| Namespace Provisioning | AWS CDK (K8s) | App namespaces with resource quotas and limit ranges |
+| DNS | AWS CDK + ExternalDNS | Route 53 hosted zone and automatic DNS record management |
 | Ingress Controller | Helm (ingress-nginx) | NGINX Ingress Controller for L7 routing |
 | TLS Certificates | Helm (cert-manager) | Automatic Let's Encrypt TLS certificates |
 | Monitoring | Helm (Prometheus + Grafana) | Cluster-wide metrics and dashboards |
 | GitOps | Helm (ArgoCD) | Declarative continuous delivery for Kubernetes |
 | Network Policies | K8s manifests | Default-deny with explicit allow rules per namespace |
 
+> **Note:** All CDK resources use `RemovalPolicy.DESTROY` — stack deletion removes everything with no orphaned resources.
+
 ## Project Structure
 
 ```
-terraform/
-├── bootstrap/               # One-time: S3 + DynamoDB for Terraform state
-├── modules/
-│   ├── eks-cluster/         # EKS cluster, node groups, IRSA roles
-│   ├── networking/          # VPC, subnets, security groups, NAT
-│   ├── ecr/                 # ECR repositories with lifecycle policies
-│   ├── namespaces/          # K8s namespace provisioning with quotas
-│   └── dns/                 # Route 53 hosted zone
-├── environments/
-│   ├── dev/                 # Dev environment (t3.medium, 2 nodes, single NAT)
-│   ├── staging/             # Staging environment
-│   └── prod/                # Production environment
+cdk/
+├── bin/cdk.ts               # CDK app entry point (dev/staging/prod stacks)
+├── lib/
+│   ├── platform-stack.ts    # Main stack orchestrating all constructs
+│   └── constructs/
+│       ├── networking.ts    # VPC, subnets, NAT gateways, ELB tags
+│       ├── eks-cluster.ts   # EKS cluster, managed node groups
+│       ├── ecr-repositories.ts  # ECR repos with lifecycle policies
+│       ├── dns-zone.ts      # Route 53 hosted zone
+│       ├── k8s-namespaces.ts    # Namespaces with quotas and limit ranges
+│       └── index.ts         # Barrel exports
+├── package.json
+├── tsconfig.json
+└── cdk.json                 # CDK context and feature flags
+terraform/                   # (legacy — being replaced by cdk/)
 helm-releases/
 ├── ingress-nginx/           # NGINX Ingress Controller values
 ├── cert-manager/            # cert-manager + ClusterIssuer
@@ -63,18 +68,17 @@ export AWS_SECRET_ACCESS_KEY=...
 ./scripts/deploy-dev.sh
 ```
 
-This bootstraps the state backend, provisions all infrastructure, configures kubectl, and installs all shared Helm releases. Takes ~20 minutes for a fresh cluster.
+This bootstraps CDK, deploys the `WorkshopPlatformDev` stack, configures kubectl, and installs all shared Helm releases. Takes ~20 minutes for a fresh cluster.
 
 ### Manual Step-by-Step
 
 ```bash
-# 1. Bootstrap state backend (one-time)
-cd terraform/bootstrap
-terraform init && terraform apply -auto-approve
+# 1. Bootstrap CDK (one-time)
+cd cdk && npm install
+npx cdk bootstrap
 
-# 2. Provision infrastructure
-cd terraform/environments/dev
-terraform init && terraform apply -auto-approve
+# 2. Deploy the dev stack
+npx cdk deploy WorkshopPlatformDev --require-approval never
 
 # 3. Configure kubectl
 aws eks update-kubeconfig --region us-east-1 --name workshop-dev
@@ -112,9 +116,9 @@ See [`docs/onboarding.md`](docs/onboarding.md) for detailed instructions.
 |---------|----------|------|
 | EKS cluster, VPC, shared services | Platform team | This repo (`platform-engineering-shared-services`) |
 | App Helm charts, Dockerfiles, CI/CD | App team | `app_dotnet-angular-monolith-iac` (or similar) |
-| ECR repositories | Platform team | This repo (Terraform ECR module) |
+| ECR repositories | Platform team | This repo (CDK EcrRepositories construct) |
 | ArgoCD Application manifests | App team | App IaC repo (references platform ArgoCD) |
-| Namespace creation + quotas | Platform team | This repo (Terraform namespace module) |
+| Namespace creation + quotas | Platform team | This repo (CDK K8sNamespaces construct) |
 | Network policies (base) | Platform team | This repo (`k8s/network-policies/`) |
 | Network policies (app-specific) | App team | App IaC repo (extends base policies) |
 
