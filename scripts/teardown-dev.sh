@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 ################################################################################
 # Tear down the dev environment to avoid ongoing AWS charges.
+# All CDK resources use RemovalPolicy.DESTROY — stack deletion removes
+# everything including ECR images, VPC, and the EKS cluster.
 #
 # Usage:
 #   export AWS_ACCESS_KEY_ID=...
@@ -12,6 +14,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CDK_DIR="$REPO_ROOT/cdk"
 REGION="${AWS_REGION:-us-east-1}"
 CLUSTER_NAME="workshop-dev"
 
@@ -42,13 +45,13 @@ done
 echo "  ✓ Helm releases removed"
 
 echo ""
-echo "[2/3] Destroying Terraform infrastructure..."
-cd "$REPO_ROOT/terraform/environments/dev"
-terraform init -input=false
-terraform destroy -auto-approve -input=false
+echo "[2/3] Destroying CDK stack (all resources use RemovalPolicy.DESTROY)..."
+cd "$CDK_DIR"
+npm install
+npx cdk destroy WorkshopPlatformDev --force
 echo "  ✓ Infrastructure destroyed"
 
 echo ""
-echo "[3/3] Done. The state backend (S3 + DynamoDB) is preserved."
-echo "  To destroy the state backend too, run:"
-echo "    cd terraform/bootstrap && terraform destroy -auto-approve"
+echo "[3/3] Done. The CDK bootstrap stack is preserved."
+echo "  To destroy the bootstrap stack too, run:"
+echo "    npx cdk destroy CDKToolkit --force"

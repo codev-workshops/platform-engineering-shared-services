@@ -23,13 +23,13 @@ This document explains how application teams deploy their workloads onto the sha
 
 ### 1. Request a Namespace (Platform Team)
 
-Namespaces are provisioned via Terraform in this repo. Add your namespace to the `app_namespaces` local in the appropriate environment file (e.g., `terraform/environments/dev/main.tf`):
+Namespaces are provisioned via AWS CDK in this repo. Add your namespace to the `namespaces` array in `cdk/bin/cdk.ts` for the appropriate environment stack:
 
-```hcl
+```typescript
 {
-  name        = "my-app-dev"
-  environment = "dev"
-  team        = "my-team"
+  name: 'my-app-dev',
+  environment: 'dev',
+  team: 'my-team',
 }
 ```
 
@@ -40,12 +40,12 @@ Each namespace comes pre-configured with:
 
 ### 2. Request an ECR Repository (Platform Team)
 
-Add your service image name to the `ecr_repositories` local:
+Add your service image name to the `ecrRepositoryNames` array in `cdk/bin/cdk.ts`:
 
-```hcl
-ecr_repositories = [
-  "workshop/my-new-service",
-  # ...existing repos...
+```typescript
+ecrRepositoryNames: [
+  'workshop/my-new-service',
+  // ...existing repos...
 ]
 ```
 

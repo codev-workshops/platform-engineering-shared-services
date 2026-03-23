@@ -50,16 +50,25 @@ This architecture supports the **monolith-to-microservices decomposition** workf
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-## Terraform Modules
+## CDK Constructs
 
-| Module | Purpose |
-|--------|---------|
-| `bootstrap` | S3 bucket + DynamoDB table for Terraform remote state (run once) |
-| `networking` | VPC, subnets, NAT gateways, security groups |
-| `eks-cluster` | EKS cluster, managed node groups, IRSA, cluster admin access |
-| `ecr` | ECR repositories with lifecycle policies and scan-on-push |
-| `namespaces` | Kubernetes namespace provisioning with resource quotas and limit ranges |
-| `dns` | Route 53 hosted zone (if needed) |
+All infrastructure is defined in AWS CDK (TypeScript) under `cdk/`. Every resource uses `RemovalPolicy.DESTROY` so stack deletion leaves nothing behind.
+
+| Construct | Purpose |
+|-----------|---------|
+| `Networking` | VPC with public/private subnets, NAT gateways, ELB subnet tags |
+| `EksCluster` | EKS cluster with managed node groups, KubectlV31Layer, cluster admin role |
+| `EcrRepositories` | ECR repositories with lifecycle policies, scan-on-push, `emptyOnDelete` |
+| `DnsZone` | Route 53 public hosted zone (optional) |
+| `K8sNamespaces` | Kubernetes namespaces with resource quotas and limit ranges |
+
+### CDK Stacks
+
+| Stack | Environment | Description |
+|-------|-------------|-------------|
+| `WorkshopPlatformDev` | dev | Development environment (2 AZs, 1 NAT, t3.medium nodes) |
+| `WorkshopPlatformStaging` | staging | Staging environment (2 AZs, 1 NAT, t3.medium nodes) |
+| `WorkshopPlatformProd` | prod | Production environment (3 AZs, 2 NATs, t3.large nodes) |
 
 ## Helm Releases
 
@@ -86,7 +95,7 @@ This architecture supports the **monolith-to-microservices decomposition** workf
 
 ```
 1. Platform team deploys shared services (this repo)
-   └── terraform apply + helm install
+   └── cdk deploy + helm install
 
 2. Monolith app exists in app_dotnet-angular-monolith repo
    └── Single deployable .NET 8 + Angular app
