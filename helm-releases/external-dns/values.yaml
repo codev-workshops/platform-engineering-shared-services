@@ -1,0 +1,20 @@
+# external-dns Helm chart overrides
+# Chart: external-dns/external-dns
+provider: aws
+aws:
+  region: us-east-1
+  zoneType: public
+domainFilters:
+  - example.com
+policy: sync
+txtOwnerId: workshop-platform
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/external-dns
