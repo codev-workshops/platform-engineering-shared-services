@@ -55,7 +55,8 @@ scripts/
 └── teardown-dev.sh          # Destroy dev environment to save costs
 docs/
 ├── architecture.md          # Platform architecture overview
-└── onboarding.md            # How app teams onboard to the platform
+├── onboarding.md            # How app teams onboard to the platform
+└── runbooks/                # Deployment, rollback, incident response, monitoring
 ```
 
 ## Quick Start
@@ -94,6 +95,10 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
 ```bash
 ./scripts/teardown-dev.sh
 ```
+
+### Operations
+
+Runbooks for deployment, rollback, incident response, and monitoring live in [`docs/runbooks/`](docs/runbooks/README.md).
 
 ## App Team Onboarding
 
